@@ -1,0 +1,102 @@
+tokInteger = decimalInteger | hexInteger | binInteger;
+decimalInteger = ["+" | "-"] ?/[0-9]+/?;
+hexInteger = "0x" ?/[0-9a-fA-F]+/?;
+binInteger = "0b" ?/[01]+/?;
+
+tokIdentifier = ?/[0-9]*[a-zA-Z_][a-zA-Z_0-9]*/?;
+tokVarName = ?/\$[a-zA-Z_][a-zA-Z_0-9]*/?;
+
+ESC =
+	?/\\['"\\nrtbfv]/? |
+	?/\\u[a-fA-F0-9]{4}/?;
+tokString = '"' @:{?/[^"\n\\]/?|ESC} '"';
+tokCodeFragment = ?/\[\{.*?\]\}/?;
+
+includeDirective = "include" tokString;
+
+tableGenFile = {object} $;
+object = tclass | tdef | defm | let | multiClass | foreach;
+
+tclass = "class" name:tokIdentifier [args:templateArgList] baseClasses:baseClassList body:body;
+mdecl = "," @:declaration;
+templateArgList = "<" @:(declaration {mdecl}) ">";
+defaultValue = ["=" @:value];
+declaration = type:type name:tokIdentifier value:defaultValue;
+
+type =
+	"string" | "code" | "bit" | "int" | "dag" |
+	"bits" "<" tokInteger ">" |
+	"list" "<" type ">" |
+	classID;
+classID = tokIdentifier;
+
+value = value:simpleValue {suffix:valueSuffix};
+valueSuffix =
+	"{" rangeList "}" | 
+	"[" rangeList "]" | 
+	"." tokIdentifier;
+rangeList = rangePiece {"," rangePiece};
+rangePiece =
+	tokInteger | 
+	tokInteger "-" tokInteger | 
+	tokInteger tokInteger;
+
+simpleValue = 
+	tokIdentifier | 
+	tokInteger | 
+	{tokString}+ | 
+	tokCodeFragment | 
+	"?" |
+	"{" valueList "}" | 
+	classID "<" valueListNE ">" | 
+	"[" valueList "]" ["<" type ">"] | 
+	"(" dagArg dagArgList ")" | 
+	bangValue;
+
+valueList = [valueListNE];
+mvalue = "," @:value;
+valueListNE = value {mvalue};
+
+marg = "," @:dagArg;
+dagArgList = dagArg {marg};
+dagArg = value:value [":" name:tokVarName] | name:tokVarName;
+
+bangOperator =
+	"!eq" | "!if" | "!head" | "!tail" | "!con" |
+	"!add" | "!shl" | "!sra" | "!srl" | "!and" |
+	"!cast" | "!empty" | "!subst" | "!foreach" |
+	"!listconcat" | "!strconcat";
+bangValue = operator:bangOperator ["<" type:type ">"] "(" args:valueListNE ")";
+
+baseClassList = [":" @:baseClassListNE];
+mcref = "," @:subClassRef;
+baseClassListNE = subClassRef {mcref};
+subClassRef = id:(classID | multiClassID) ["<" args:valueList ">"];
+defmID = tokIdentifier;
+
+body = ";" | "{" @:bodyList "}";
+bodyList = {bodyItem};
+bodyItem =
+	@:declaration ";" |
+	bodyLet;
+bodyLet = "let" name:tokIdentifier [range:rangeList] "=" value:value ";";
+
+tdef = "def" name:tokIdentifier baseClasses:baseClassList body:body;
+defm = "defm" name:tokIdentifier ":" base:baseClassListNE ";";
+
+foreach =
+	"foreach" declaration "in" "{" {object} "}" |
+	"foreach" declaration "in" object;
+
+let =
+	"let" items:letList "in" "{" body:{object} "}" | 
+	"let" items:letList "in" body+:object;
+mlitem = "," @:letItem;
+letList = letItem {mlitem};
+letItem = tokIdentifier [rangeList] "=" value;
+
+multiClass = "multiclass" name:tokIdentifier [args:templateArgList] [":" bases:baseMultiClassList] "{" body:{multiClassObject}+ "}";
+mmcls = "," @:multiClassID;
+baseMultiClassList = multiClassID {mmcls};
+multiClassID = tokIdentifier;
+multiClassObject = tdef | defm | let | foreach;
