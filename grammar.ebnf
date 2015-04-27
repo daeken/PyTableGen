@@ -41,10 +41,12 @@ rangePiece =
 	tokInteger "-" tokInteger | 
 	tokInteger tokInteger;
 
+stringJoin = {tokString}+;
+
 simpleValue = 
 	tokIdentifier | 
 	tokInteger | 
-	{tokString}+ | 
+	stringJoin | 
 	tokCodeFragment | 
 	"?" |
 	"{" valueList "}" | 
