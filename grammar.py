@@ -15,7 +15,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from grako.parsing import graken, Parser
 
 
-__version__ = (2015, 4, 25, 22, 30, 5, 5)
+__version__ = (2015, 4, 27, 21, 16, 57, 0)
 
 __all__ = [
     'grammarParser',
@@ -275,6 +275,13 @@ class grammarParser(Parser):
             self._error('no available options')
 
     @graken()
+    def _stringJoin_(self):
+
+        def block0():
+            self._tokString_()
+        self._positive_closure(block0)
+
+    @graken()
     def _simpleValue_(self):
         with self._choice():
             with self._option():
@@ -282,10 +289,7 @@ class grammarParser(Parser):
             with self._option():
                 self._tokInteger_()
             with self._option():
-
-                def block0():
-                    self._tokString_()
-                self._positive_closure(block0)
+                self._stringJoin_()
             with self._option():
                 self._tokCodeFragment_()
             with self._option():
@@ -647,12 +651,17 @@ class grammarParser(Parser):
         )
 
     @graken()
+    def _mmcls_(self):
+        self._token(',')
+        self._multiClassID_()
+        self.ast['@'] = self.last_node
+
+    @graken()
     def _baseMultiClassList_(self):
         self._multiClassID_()
 
         def block0():
-            self._token(',')
-            self._multiClassID_()
+            self._mmcls_()
         self._closure(block0)
 
     @graken()
@@ -743,6 +752,9 @@ class grammarSemantics(object):
     def rangePiece(self, ast):
         return ast
 
+    def stringJoin(self, ast):
+        return ast
+
     def simpleValue(self, ast):
         return ast
 
@@ -819,6 +831,9 @@ class grammarSemantics(object):
         return ast
 
     def multiClass(self, ast):
+        return ast
+
+    def mmcls(self, ast):
         return ast
 
     def baseMultiClassList(self, ast):
