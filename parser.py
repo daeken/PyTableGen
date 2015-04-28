@@ -11,20 +11,30 @@ class Semantics(object):
 	def listJoiner(self, ast):
 		return [ast[0]] + ast[1]
 	def stringJoin(self, ast):
-		return dict(chars=''.join(ast), rule='tokString')
+		return dict(value=''.join(ast), rule='tokString')
 	valueListNE = listJoiner
 	dagArgList = listJoiner
 	templateArgList = listJoiner
 	baseClassListNE = listJoiner
 
-def parse(text):
+	def decimalInteger(self, ast):
+		if isinstance(ast, list):
+			return int(''.join(ast))
+		return {'rule' : 'tokInteger', 'value': int(ast)}
+	def hexInteger(self, ast):
+		return {'rule' : 'tokInteger', 'value': int(ast, 16)}
+	def binInteger(self, ast):
+		return {'rule' : 'tokInteger', 'value': int(ast, 2)}
+
+def parse(filename, text):
 	parser = grammar.grammarParser(parseinfo=True)
 	ast = parser.parse(
 		text,
 		'tableGenFile',
-		filename=sys.argv[1],
+		filename=filename,
 		trace=False, 
-		semantics=Semantics())
+		semantics=Semantics(), 
+		comments_re=r'\s*(//.*$|/\*(.|\n)*?\*/)')
 	def flatten(ast):
 		if isinstance(ast, list):
 			return map(flatten, ast)
@@ -38,4 +48,4 @@ if __name__=='__main__':
 	import sys, pprint
 	with open(sys.argv[1]) as f:
 		text = f.read()
-	pprint.pprint(parse(text))
+	pprint.pprint(parse(sys.argv[1], text))

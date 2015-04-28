@@ -15,7 +15,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from grako.parsing import graken, Parser
 
 
-__version__ = (2015, 4, 27, 21, 16, 57, 0)
+__version__ = (2015, 4, 28, 6, 20, 23, 1)
 
 __all__ = [
     'grammarParser',
@@ -60,11 +60,13 @@ class grammarParser(Parser):
     def _hexInteger_(self):
         self._token('0x')
         self._pattern(r'[0-9a-fA-F]+')
+        self.ast['@'] = self.last_node
 
     @graken()
     def _binInteger_(self):
         self._token('0b')
         self._pattern(r'[01]+')
+        self.ast['@'] = self.last_node
 
     @graken()
     def _tokIdentifier_(self):
@@ -541,7 +543,8 @@ class grammarParser(Parser):
     @graken()
     def _defm_(self):
         self._token('defm')
-        self._tokIdentifier_()
+        with self._optional():
+            self._tokIdentifier_()
         self.ast['name'] = self.last_node
         self._token(':')
         self._baseClassListNE_()
