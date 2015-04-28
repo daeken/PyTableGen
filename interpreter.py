@@ -1,4 +1,5 @@
 from parser import parse
+from pprint import pprint
 
 class Interpreter(object):
 	def __init__(self, ast):
@@ -14,8 +15,6 @@ class Interpreter(object):
 
 		self.define(ast)
 		self.execute(ast)
-
-		pprint(self.defs)
 
 	def define(self, elem):
 		if isinstance(elem, dict):
@@ -42,7 +41,7 @@ class Interpreter(object):
 			assert 'rule' in elem
 			if elem['rule'] == 'tdef':
 				self.pushcontext()
-				self.cur_def = [('NAME', elem['name'])]
+				self.cur_def = [[], ('NAME', 'string', elem['name'])]
 				self.context['NAME'] = elem['name']
 				self.defs.append((elem['name'], self.cur_def))
 				for cls in elem['baseClasses']:
@@ -69,13 +68,15 @@ class Interpreter(object):
 		for base in cls['baseClasses']:
 			self.evalclass(base['id'], base['args'])
 
+		self.cur_def[0].append(name)
+		
 		self.evalbody(self.classes[name]['body'])
 
 	def evalbody(self, body):
 		for elem in body:
 			if elem['rule'] == 'declaration':
 				val = self.evalexpr(elem['value'])
-				self.cur_def.append((elem['name'], val))
+				self.cur_def.append((elem['name'], elem['type'], val))
 				self.context[elem['name']] = val
 			else:
 				print 'Unknown element in body:', elem['rule']
@@ -97,7 +98,7 @@ class Interpreter(object):
 				if value in self.context:
 					return self.context[value]
 				elif value in [cdef[0] for cdef in self.defs]:
-					return [cdef[1] for cdef in self.defs if cdef[0] == value][0]
+					return ('defref', value)
 				else:
 					print 'Unknown name:', value
 					assert False
@@ -115,7 +116,7 @@ class Interpreter(object):
 			find, replace, input = args
 			if isinstance(input, unicode):
 				return input.replace(find, replace)
-			elif isinstance(input, list):
+			elif isinstance(input, tuple) and input[0] == 'defref':
 				return replace if input == find else input
 			else:
 				print 'Unknown input to subst:'
@@ -134,11 +135,10 @@ class Interpreter(object):
 
 def interpret(filename, source):
 	ast = parse(filename, source)
-	Interpreter(ast)
+	return Interpreter(ast)
 
 if __name__=='__main__':
 	import sys
-	from pprint import pprint
 	with open(sys.argv[1]) as f:
 		text = f.read()
 	interpret(sys.argv[1], text)
