@@ -7,11 +7,11 @@ class Semantics(object):
 			ast['rule'] = ast._parseinfo.rule
 		return ast
 	def tokString(self, ast):
-		return ''.join(ast)
+		return u''.join(ast)
 	def listJoiner(self, ast):
 		return [ast[0]] + ast[1]
 	def stringJoin(self, ast):
-		return dict(value=''.join(ast), rule='tokString')
+		return dict(value=u''.join(ast), rule='tokString')
 	valueListNE = listJoiner
 	dagArgList = listJoiner
 	templateArgList = listJoiner

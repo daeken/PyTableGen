@@ -17,7 +17,7 @@ includeDirective = "include" tokString;
 tableGenFile = {object} $;
 object = tclass | tdef | defm | let | multiClass | foreach;
 
-tclass = "class" name:tokIdentifier [args:templateArgList] baseClasses:baseClassList body:body;
+tclass = "class" name:tokIdentifier [args:templateArgList] bases:baseClassList body:body;
 mdecl = "," @:declaration;
 templateArgList = "<" @:(declaration {mdecl}) ">";
 defaultValue = ["=" @:value];
@@ -26,9 +26,11 @@ declaration = type:type name:tokIdentifier value:defaultValue;
 type =
 	"string" | "code" | "bit" | "int" | "dag" |
 	"bits" "<" tokInteger ">" |
-	"list" "<" type ">" |
+	listType |
 	classID;
 classID = tokIdentifier;
+
+listType = "list" "<" type:type ">";
 
 value = value:simpleValue {suffix:valueSuffix};
 valueSuffix =
@@ -51,10 +53,11 @@ simpleValue =
 	"?" |
 	"{" valueList "}" | 
 	classID "<" valueListNE ">" | 
-	"[" valueList "]" ["<" type ">"] | 
+	simpleList | 
 	"(" dagArg dagArgList ")" | 
 	bangValue;
 
+simpleList = "[" values:valueList "]" ["<" type:type ">"];
 valueList = [valueListNE];
 mvalue = "," @:value;
 valueListNE = value {mvalue};
@@ -83,8 +86,8 @@ bodyItem =
 	bodyLet;
 bodyLet = "let" name:tokIdentifier [range:rangeList] "=" value:value ";";
 
-tdef = "def" name:tokIdentifier baseClasses:baseClassList body:body;
-defm = "defm" name:[tokIdentifier] ":" base:baseClassListNE ";";
+tdef = "def" name:tokIdentifier bases:baseClassList body:body;
+defm = "defm" name:[tokIdentifier] ":" bases:baseClassListNE ";";
 
 foreach =
 	"foreach" declaration "in" "{" {object} "}" |

@@ -7,7 +7,7 @@ class SSH {
 	string PreferredAuthentications = "";
 	int ServerAliveInterval = -1;
 	string Compression = "";
-	list Aliases = [];
+	list<string> Aliases = [];
 }
 
 def Common : SSH {

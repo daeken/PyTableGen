@@ -15,7 +15,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from grako.parsing import graken, Parser
 
 
-__version__ = (2015, 4, 28, 6, 20, 23, 1)
+__version__ = (2015, 4, 28, 19, 40, 35, 1)
 
 __all__ = [
     'grammarParser',
@@ -143,12 +143,12 @@ class grammarParser(Parser):
             self._templateArgList_()
             self.ast['args'] = self.last_node
         self._baseClassList_()
-        self.ast['baseClasses'] = self.last_node
+        self.ast['bases'] = self.last_node
         self._body_()
         self.ast['body'] = self.last_node
 
         self.ast._define(
-            ['name', 'args', 'baseClasses', 'body'],
+            ['name', 'args', 'bases', 'body'],
             []
         )
 
@@ -210,10 +210,7 @@ class grammarParser(Parser):
                 self._tokInteger_()
                 self._token('>')
             with self._option():
-                self._token('list')
-                self._token('<')
-                self._type_()
-                self._token('>')
+                self._listType_()
             with self._option():
                 self._classID_()
             self._error('expecting one of: bit code dag int string')
@@ -221,6 +218,19 @@ class grammarParser(Parser):
     @graken()
     def _classID_(self):
         self._tokIdentifier_()
+
+    @graken()
+    def _listType_(self):
+        self._token('list')
+        self._token('<')
+        self._type_()
+        self.ast['type'] = self.last_node
+        self._token('>')
+
+        self.ast._define(
+            ['type'],
+            []
+        )
 
     @graken()
     def _value_(self):
@@ -306,13 +316,7 @@ class grammarParser(Parser):
                 self._valueListNE_()
                 self._token('>')
             with self._option():
-                self._token('[')
-                self._valueList_()
-                self._token(']')
-                with self._optional():
-                    self._token('<')
-                    self._type_()
-                    self._token('>')
+                self._simpleList_()
             with self._option():
                 self._token('(')
                 self._dagArg_()
@@ -321,6 +325,23 @@ class grammarParser(Parser):
             with self._option():
                 self._bangValue_()
             self._error('expecting one of: ?')
+
+    @graken()
+    def _simpleList_(self):
+        self._token('[')
+        self._valueList_()
+        self.ast['values'] = self.last_node
+        self._token(']')
+        with self._optional():
+            self._token('<')
+            self._type_()
+            self.ast['type'] = self.last_node
+            self._token('>')
+
+        self.ast._define(
+            ['values', 'type'],
+            []
+        )
 
     @graken()
     def _valueList_(self):
@@ -531,12 +552,12 @@ class grammarParser(Parser):
         self._tokIdentifier_()
         self.ast['name'] = self.last_node
         self._baseClassList_()
-        self.ast['baseClasses'] = self.last_node
+        self.ast['bases'] = self.last_node
         self._body_()
         self.ast['body'] = self.last_node
 
         self.ast._define(
-            ['name', 'baseClasses', 'body'],
+            ['name', 'bases', 'body'],
             []
         )
 
@@ -548,11 +569,11 @@ class grammarParser(Parser):
         self.ast['name'] = self.last_node
         self._token(':')
         self._baseClassListNE_()
-        self.ast['base'] = self.last_node
+        self.ast['bases'] = self.last_node
         self._token(';')
 
         self.ast._define(
-            ['name', 'base'],
+            ['name', 'bases'],
             []
         )
 
@@ -743,6 +764,9 @@ class grammarSemantics(object):
     def classID(self, ast):
         return ast
 
+    def listType(self, ast):
+        return ast
+
     def value(self, ast):
         return ast
 
@@ -759,6 +783,9 @@ class grammarSemantics(object):
         return ast
 
     def simpleValue(self, ast):
+        return ast
+
+    def simpleList(self, ast):
         return ast
 
     def valueList(self, ast):
