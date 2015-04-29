@@ -1,6 +1,7 @@
 from parser import parse
 from pprint import pprint
 from collections import OrderedDict
+import itertools
 
 class TableGenType(object):
 	def __init__(self, type):
@@ -279,15 +280,35 @@ class Interpreter(object):
 				pprint(args)
 		elif op == '!strconcat':
 			return u''.join(args)
+		elif op == '!listconcat':
+			return list(itertools.chain.from_iterable(args))
 		elif op == '!if':
 			cmp, if_, else_ = args
 			return if_ if cmp != 0 else else_
+		elif op == '!eq':
+			a, b = args
+			return 1 if a == b else 0
 		elif op == '!head':
 			return args[0][0]
 		elif op == '!tail':
 			return args[0][1:]
 		elif op == '!empty':
 			return 1 if len(args[0]) == 0 else 0
+		elif op == '!shl':
+			a, b = args
+			return a << b
+		elif op == '!sra':
+			a, b = args
+			return a >> b
+		elif op == '!srl':
+			a, b = args
+			return a >> b if val >= 0 else (a + 0x100000000) >> b
+		elif op == '!add':
+			a, b = args
+			return a + b
+		elif op == '!and':
+			a, b = args
+			return a & b
 		else:
 			print 'Unknown bang op:', op
 			pprint(args)
