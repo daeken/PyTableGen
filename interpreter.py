@@ -65,6 +65,7 @@ class Interpreter(object):
 		self.classes = {}
 		self.multiclasses = {}
 
+		self.anony_i = 0
 		self.basenames = []
 		self.contexts = []
 		self.context = {}
@@ -129,20 +130,25 @@ class Interpreter(object):
 				if elem['bases'] is not None:
 					for cls in elem['bases']:
 						self.evalclass(cls['id'], cls['args'])
+				if len(self.basenames) > 0:
+					self.cur_def[0].append(elem['name'])
 				if elem['body'] != ';':
 					self.evalbody(elem['body'])
 				self.popcontext()
 			elif elem['rule'] == 'defm':
 				self.pushcontext()
-				if elem['name'] is not None:
-					if 'NAME' not in self.context:
-						self.context['NAME'] = elem['name']
-					self.basenames.append(elem['name'])
+				if elem['name'] is None:
+					name = 'anonymous_%i' % (self.anony_i)
+					self.anony_i += 1
+				else:
+					name = elem['name']
+				if 'NAME' not in self.context:
+					self.context['NAME'] = name
+				self.basenames.append(name)
 				if elem['bases'] is not None:
 					for cls in elem['bases']:
-						self.evalmulticlass(cls['id'], cls['args'])
-				if elem['name'] is not None:
-					self.basenames.pop()
+						self.evalclass(cls['id'], cls['args'])
+				self.basenames.pop()
 				self.popcontext()
 			elif elem['rule'] == 'let':
 				self.pushlet()
@@ -173,6 +179,10 @@ class Interpreter(object):
 				self.context[elem['name']] = self.evalexpr(clsargs[i]['value'])
 
 	def evalclass(self, name, args):
+		if name in self.multiclasses:
+			self.evalmulticlass(name, args)
+			return
+
 		cls = self.classes[name]
 		self.handleargs(cls['args'], args)
 
@@ -187,6 +197,7 @@ class Interpreter(object):
 		mcls = self.multiclasses[name]
 
 		self.handleargs(mcls['args'], args)
+
 		self.execute(mcls['body'])
 
 	def evalbody(self, body):
@@ -297,7 +308,7 @@ class Interpreter(object):
 		elif op == '!listconcat':
 			return list(itertools.chain.from_iterable(args))
 		elif op == '!if':
-			cmp, if_, else_ = args
+			cmp, else_, if_ = args
 			return if_ if cmp != 0 else else_
 		elif op == '!eq':
 			a, b = args
