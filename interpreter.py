@@ -34,6 +34,8 @@ class Interpreter(object):
 		self.basenames = []
 		self.contexts = []
 		self.context = {}
+		self.lets = []
+		self.let = {}
 		self.cur_def = None
 		self.defs = []
 
@@ -57,7 +59,7 @@ class Interpreter(object):
 					args=elem['args'] if elem['args'] is not None else [], 
 					body=elem['body'] if elem['body'] != ';' else []
 				)
-			elif elem['rule'] not in ('tdef', 'defm'):
+			elif elem['rule'] not in ('tdef', 'defm', 'let'):
 				print 'Unhandled rule:', elem['rule']
 				assert False
 		elif isinstance(elem, list):
@@ -88,6 +90,13 @@ class Interpreter(object):
 					self.evalmulticlass(cls['id'], cls['args'])
 				if elem['name'] is not None:
 					self.basenames.pop()
+			elif elem['rule'] == 'let':
+				self.pushlet()
+				for item in elem['items_']:
+					assert item['range'] is None
+					self.let[item['name']] = self.evalexpr(item['value'])
+				self.execute(elem['body'])
+				self.poplet()
 			elif elem['rule'] not in ('tclass', 'multiClass'):
 				print 'Unhandled rule:', elem['rule']
 				assert False
@@ -137,9 +146,11 @@ class Interpreter(object):
 				if elem['type'] == 'let':
 					assert elem['name'] in self.cur_def[1]
 					type = self.cur_def[1][elem['name']][0]
-					self.cur_def[1][elem['name']] = (type, val)
 				else:
-					self.cur_def[1][elem['name']] = (TableGenType.cast(elem['type']), val)
+					type = TableGenType.cast(elem['type'])
+				if elem['name'] in self.let:
+					val = self.let[elem['name']]
+				self.cur_def[1][elem['name']] = (type, val)
 				self.context[elem['name']] = val
 			else:
 				print 'Unknown element in body:', elem['rule']
@@ -207,6 +218,15 @@ class Interpreter(object):
 
 	def popcontext(self):
 		self.context = self.contexts.pop()
+
+	def pushlet(self):
+		prev = self.let
+		self.lets.append(self.let)
+		self.let = {}
+		self.let.update(prev)
+
+	def poplet(self):
+		self.let = self.lets.pop()
 
 def interpret(filename, source):
 	ast = parse(filename, source)

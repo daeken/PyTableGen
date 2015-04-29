@@ -15,7 +15,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from grako.parsing import graken, Parser
 
 
-__version__ = (2015, 4, 28, 19, 40, 35, 1)
+__version__ = (2015, 4, 28, 21, 30, 22, 1)
 
 __all__ = [
     'grammarParser',
@@ -643,10 +643,18 @@ class grammarParser(Parser):
     @graken()
     def _letItem_(self):
         self._tokIdentifier_()
+        self.ast['name'] = self.last_node
         with self._optional():
             self._rangeList_()
+        self.ast['range'] = self.last_node
         self._token('=')
         self._value_()
+        self.ast['value'] = self.last_node
+
+        self.ast._define(
+            ['name', 'range', 'value'],
+            []
+        )
 
     @graken()
     def _multiClass_(self):

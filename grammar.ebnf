@@ -98,7 +98,7 @@ let =
 	"let" items:letList "in" body+:object;
 mlitem = "," @:letItem;
 letList = letItem {mlitem};
-letItem = tokIdentifier [rangeList] "=" value;
+letItem = name:tokIdentifier range:[rangeList] "=" value:value;
 
 multiClass = "multiclass" name:tokIdentifier [args:templateArgList] [":" bases:baseMultiClassList] "{" body:{multiClassObject}+ "}";
 mmcls = "," @:multiClassID;
