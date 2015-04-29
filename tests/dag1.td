@@ -7,6 +7,7 @@ def X1;
 
 class C1<int N> {
   dag d = (X1 N);
+  dag empty = (X1);
 }
 
 def VAL1 : C1<13>;

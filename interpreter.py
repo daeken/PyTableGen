@@ -81,20 +81,32 @@ class Interpreter(object):
 		if isinstance(elem, dict):
 			assert 'rule' in elem
 			if elem['rule'] == 'tclass':
+				body = elem['body'] if elem['body'] != ';' else []
+				body = self.let.values() + body
 				self.classes[elem['name']] = dict(
 					name=elem['name'],
 					bases=elem['bases'] if elem['bases'] is not None else [],  
 					args=elem['args'] if elem['args'] is not None else [], 
-					body=elem['body'] if elem['body'] != ';' else []
+					body=body
 				)
 			elif elem['rule'] == 'multiClass':
+				body = elem['body'] if elem['body'] != ';' else []
+				body = self.let.values() + body
 				self.multiclasses[elem['name']] = dict(
 					name=elem['name'],
 					bases=elem['bases'] if elem['bases'] is not None else [],  
 					args=elem['args'] if elem['args'] is not None else [], 
-					body=elem['body'] if elem['body'] != ';' else []
+					body=body
 				)
-			elif elem['rule'] not in ('tdef', 'defm', 'let'):
+			elif elem['rule'] == 'let':
+				self.pushlet()
+				for item in elem['items_']:
+					assert item['rule'] == 'letItem'
+					item['rule'] = 'bodyLet'
+					self.let[item['name']] = item
+				self.define(elem['body'])
+				self.poplet()
+			elif elem['rule'] not in ('tdef', 'defm'):
 				print 'Unhandled rule:', elem['rule']
 				assert False
 		elif isinstance(elem, list):
@@ -109,7 +121,11 @@ class Interpreter(object):
 			assert 'rule' in elem
 			if elem['rule'] == 'tdef':
 				self.pushcontext()
-				cname = elem['name']
+				if elem['name'] is None:
+					cname = 'anonymous_%i' % (self.anony_i)
+					self.anony_i += 1
+				else:
+					cname = elem['name']
 				if 'NAME' in self.context:
 					NAME = self.context['NAME']
 					while True:
@@ -135,6 +151,8 @@ class Interpreter(object):
 				if elem['body'] != ';':
 					self.evalbody(elem['body'])
 				self.popcontext()
+
+				return cname
 			elif elem['rule'] == 'defm':
 				self.pushcontext()
 				if elem['name'] is None:
@@ -214,8 +232,6 @@ class Interpreter(object):
 				assert elem['name'] in self.cur_def[1]
 				assert elem['suffix'] is None
 				type = self.cur_def[1][elem['name']][0]
-				if elem['name'] in self.let:
-					val = self.let[elem['name']]
 				self.let[elem['name']] = val
 				self.cur_def[1][elem['name']] = (type, val)
 				self.context[elem['name']] = val
@@ -238,6 +254,19 @@ class Interpreter(object):
 					value = map(self.evalexpr, value['values_']) if value['values_'] is not None else []
 				elif value['rule'] == 'dag':
 					value = Dag(self, value)
+				elif value['rule'] == 'implicitDef':
+					cur_def = self.cur_def
+					basenames = self.basenames
+					self.basenames = []
+					tdef = dict(
+						rule='tdef', 
+						name=None, 
+						bases=[value],
+						body=';'
+					)
+					value = ('defref', self.execute(tdef))
+					self.cur_def = cur_def
+					self.basenames = basenames
 				else:
 					print 'Unknown value in expr:', value['rule']
 					pprint(value)

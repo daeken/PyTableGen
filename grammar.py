@@ -15,7 +15,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from grako.parsing import graken, Parser
 
 
-__version__ = (2015, 4, 29, 20, 56, 28, 2)
+__version__ = (2015, 4, 29, 22, 29, 36, 2)
 
 __all__ = [
     'grammarParser',
@@ -366,10 +366,7 @@ class grammarParser(Parser):
                 self._valueList_()
                 self._token('}')
             with self._option():
-                self._classID_()
-                self._token('<')
-                self._valueListNE_()
-                self._token('>')
+                self._implicitDef_()
             with self._option():
                 self._simpleList_()
             with self._option():
@@ -417,6 +414,20 @@ class grammarParser(Parser):
         def block0():
             self._mvalue_()
         self._closure(block0)
+
+    @graken()
+    def _implicitDef_(self):
+        self._classID_()
+        self.ast['id'] = self.last_node
+        self._token('<')
+        self._valueListNE_()
+        self.ast['args'] = self.last_node
+        self._token('>')
+
+        self.ast._define(
+            ['id', 'args'],
+            []
+        )
 
     @graken()
     def _dag_(self):
@@ -894,6 +905,9 @@ class grammarSemantics(object):
         return ast
 
     def valueListNE(self, ast):
+        return ast
+
+    def implicitDef(self, ast):
         return ast
 
     def dag(self, ast):

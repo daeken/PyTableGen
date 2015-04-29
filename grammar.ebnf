@@ -55,7 +55,7 @@ simpleValue =
 	tokCodeFragment | 
 	"?" |
 	"{" valueList "}" | 
-	classID "<" valueListNE ">" | 
+	implicitDef | 
 	simpleList | 
 	dag | 
 	bangValue |
@@ -66,6 +66,8 @@ simpleList = "[" values:valueList "]" ["<" type:type ">"];
 valueList = [valueListNE];
 mvalue = "," @:value;
 valueListNE = value {mvalue};
+
+implicitDef = id:classID "<" args:valueListNE ">";
 
 dag = "(" root:dagArg args:[dagArgList] ")";
 marg = "," @:dagArg;

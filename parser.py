@@ -1,4 +1,4 @@
-import grammar
+import grammar, sys
 from grako.exceptions import FailedParse
 from grako.ast import AST
 
@@ -33,7 +33,7 @@ class Semantics(object):
 		return {'rule' : 'tokInteger', 'value': int(ast, 2)}
 
 	def includeDirective(self, ast):
-		print 'Including', ast
+		print >>sys.stderr, 'Including', ast
 		if ast in included:
 			return None
 		included.append(ast)
@@ -80,5 +80,5 @@ def parse(filename, _includePaths=None):
 	return flatten(ast)	
 
 if __name__=='__main__':
-	import sys, pprint
+	import pprint
 	pprint.pprint(parse(sys.argv[1]))
