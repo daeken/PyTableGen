@@ -15,7 +15,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from grako.parsing import graken, Parser
 
 
-__version__ = (2015, 4, 29, 22, 29, 36, 2)
+__version__ = (2015, 4, 29, 23, 6, 52, 2)
 
 __all__ = [
     'grammarParser',
@@ -102,7 +102,15 @@ class grammarParser(Parser):
 
     @graken()
     def _tokCodeFragment_(self):
-        self._pattern(r'\[\{(.|\n)*?\}\]')
+        self._token('[{')
+        self._pattern(r'(.|\n)*?(?=\}\])')
+        self.ast['fragment'] = self.last_node
+        self._token('}]')
+
+        self.ast._define(
+            ['fragment'],
+            []
+        )
 
     @graken()
     def _includeDirective_(self):

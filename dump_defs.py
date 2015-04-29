@@ -9,8 +9,11 @@ if len(sys.argv) > 2:
 def drepr(type, val):
 	if isinstance(type, TableGenBits):
 		return '{ %s }' % (', '.join(str((val >> (type.width - i - 1)) & 1) for i in xrange(type.width)))
-	elif isinstance(val, tuple) and val[0] == 'defref':
-		return val[1]
+	elif isinstance(val, tuple):
+		if val[0] == 'defref':
+			return val[1]
+		elif val[0] == 'code':
+			return '[{%s}]' % val[1]
 	elif isinstance(val, unicode):
 		return '"%s"' % val.encode('unicode_escape').replace('"', '\\"')
 	elif isinstance(val, list):

@@ -1,1 +1,4 @@
-def vtInt      : PatLeaf<(vt),  [{ return N->getVT().isInteger(); }]>;
+class SchedPredicate<code pred> {
+  code Predicate = pred;
+}
+def NoSchedPred : SchedPredicate<[{true}]>;

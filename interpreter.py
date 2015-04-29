@@ -254,6 +254,8 @@ class Interpreter(object):
 					value = map(self.evalexpr, value['values_']) if value['values_'] is not None else []
 				elif value['rule'] == 'dag':
 					value = Dag(self, value)
+				elif value['rule'] == 'tokCodeFragment':
+					value = ('code', value['fragment'])
 				elif value['rule'] == 'implicitDef':
 					cur_def = self.cur_def
 					basenames = self.basenames
@@ -272,7 +274,9 @@ class Interpreter(object):
 					pprint(value)
 					assert False
 			elif isinstance(value, unicode):
-				if value in self.context:
+				if value == '?':
+					value = None
+				elif value in self.context:
 					value = self.context[value]
 				elif value in [cdef[0] for cdef in self.defs]:
 					value = ('defref', value)

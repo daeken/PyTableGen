@@ -10,7 +10,7 @@ ESC =
 	?/\\['"\\nrtbfv]/? |
 	?/\\u[a-fA-F0-9]{4}/?;
 tokString = '"' @:{?/[^"\n\\]/?|ESC} '"';
-tokCodeFragment = ?/\[\{(.|\n)*?\}\]/?;
+tokCodeFragment = "[{" fragment:?/(.|\n)*?(?=\}\])/? "}]";
 
 includeDirective = "include" @:tokString;
 
