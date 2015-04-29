@@ -52,7 +52,7 @@ class Definition(OrderedDict):
 class Dag(object):
 	def __init__(self, interpreter, elem):
 		self.elements = []
-		for elem in [elem['root']] + elem['args']:
+		for elem in [elem['root']] + ([] if elem['args'] is None else elem['args']):
 			self.elements.append((elem['name'], interpreter.evalexpr(elem['value'])))
 
 	def __repr__(self):
@@ -153,7 +153,7 @@ class Interpreter(object):
 			elif elem['rule'] == 'let':
 				self.pushlet()
 				for item in elem['items_']:
-					assert item['range'] is None
+					assert item['suffix'] is None
 					self.let[item['name']] = self.evalexpr(item['value'])
 				self.execute(elem['body'])
 				self.poplet()
@@ -204,13 +204,19 @@ class Interpreter(object):
 		for elem in body:
 			if elem['rule'] == 'declaration':
 				val = self.evalexpr(elem['value'])
-				if elem['type'] == 'let':
-					assert elem['name'] in self.cur_def[1]
-					type = self.cur_def[1][elem['name']][0]
-				else:
-					type = TableGenType.cast(elem['type'])
+				type = TableGenType.cast(elem['type'])
 				if elem['name'] in self.let:
 					val = self.let[elem['name']]
+				self.cur_def[1][elem['name']] = (type, val)
+				self.context[elem['name']] = val
+			elif elem['rule'] == 'bodyLet':
+				val = self.evalexpr(elem['value'])
+				assert elem['name'] in self.cur_def[1]
+				assert elem['suffix'] is None
+				type = self.cur_def[1][elem['name']][0]
+				if elem['name'] in self.let:
+					val = self.let[elem['name']]
+				self.let[elem['name']] = val
 				self.cur_def[1][elem['name']] = (type, val)
 				self.context[elem['name']] = val
 			else:

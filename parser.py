@@ -1,7 +1,9 @@
 import grammar
+from grako.exceptions import FailedParse
 from grako.ast import AST
 
 includePaths = ['.']
+included = []
 
 class Semantics(object):
 	def _default(self, ast, *args, **kwargs):
@@ -31,13 +33,20 @@ class Semantics(object):
 		return {'rule' : 'tokInteger', 'value': int(ast, 2)}
 
 	def includeDirective(self, ast):
+		print 'Including', ast
+		if ast in included:
+			return None
+		included.append(ast)
 		for dir in includePaths:
 			try:
 				fn = dir + '/' + ast
-				with open(fn) as f:
-					return parse(ast, f.read())
+				return parse(fn)
 			except IOError:
 				pass
+			except FailedParse:
+				import traceback
+				traceback.print_exc()
+				raise
 		print 'Could not find include file:', ast
 		print 'Include paths:', includePaths
 		assert False
