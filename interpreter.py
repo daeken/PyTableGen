@@ -1,7 +1,7 @@
 from parser import parse
 from pprint import pprint
 from collections import OrderedDict
-import itertools
+import itertools, re
 
 class TableGenType(object):
 	def __init__(self, type):
@@ -108,10 +108,23 @@ class Interpreter(object):
 			assert 'rule' in elem
 			if elem['rule'] == 'tdef':
 				self.pushcontext()
-				NAME = u''.join(self.basenames) + elem['name']
-				self.cur_def = ([], Definition(NAME=('string', NAME)))
-				self.context['NAME'] = NAME
-				self.defs.append((NAME, self.cur_def))
+				cname = elem['name']
+				NAME = self.context['NAME']
+				while True:
+					if cname.startswith('NAME#'):
+						cname = NAME + cname[5:]
+					elif cname.endswith('#NAME'):
+						cname = cname[:-5] + NAME
+					elif '#NAME#' in cname:
+						cname = cname.replace('#NAME#', NAME)
+					else:
+						break
+				if cname == elem['name']:
+					cname = u''.join(self.basenames) + elem['name']
+				if len(self.basenames) == 0:
+					self.context['NAME'] = cname
+				self.cur_def = ([], Definition(NAME=('string', self.context['NAME'])))
+				self.defs.append((cname, self.cur_def))
 				if elem['bases'] is not None:
 					for cls in elem['bases']:
 						self.evalclass(cls['id'], cls['args'])
@@ -119,13 +132,17 @@ class Interpreter(object):
 					self.evalbody(elem['body'])
 				self.popcontext()
 			elif elem['rule'] == 'defm':
+				self.pushcontext()
 				if elem['name'] is not None:
+					if 'NAME' not in self.context:
+						self.context['NAME'] = elem['name']
 					self.basenames.append(elem['name'])
 				if elem['bases'] is not None:
 					for cls in elem['bases']:
 						self.evalmulticlass(cls['id'], cls['args'])
 				if elem['name'] is not None:
 					self.basenames.pop()
+				self.popcontext()
 			elif elem['rule'] == 'let':
 				self.pushlet()
 				for item in elem['items_']:
@@ -168,12 +185,8 @@ class Interpreter(object):
 	def evalmulticlass(self, name, args):
 		mcls = self.multiclasses[name]
 
-		self.pushcontext()
-
 		self.handleargs(mcls['args'], args)
 		self.execute(mcls['body'])
-
-		self.popcontext()
 
 	def evalbody(self, body):
 		for elem in body:

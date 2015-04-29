@@ -15,7 +15,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from grako.parsing import graken, Parser
 
 
-__version__ = (2015, 4, 29, 5, 31, 40, 2)
+__version__ = (2015, 4, 29, 6, 18, 5, 2)
 
 __all__ = [
     'grammarParser',
@@ -70,7 +70,7 @@ class grammarParser(Parser):
 
     @graken()
     def _tokIdentifier_(self):
-        self._pattern(r'[0-9]*[a-zA-Z_][a-zA-Z_0-9]*')
+        self._pattern(r'[0-9]*[a-zA-Z_][a-zA-Z_0-9#]*')
 
     @graken()
     def _tokVarName_(self):
