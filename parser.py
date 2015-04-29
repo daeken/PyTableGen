@@ -1,6 +1,8 @@
 import grammar
 from grako.ast import AST
 
+includePaths = ['.']
+
 class Semantics(object):
 	def _default(self, ast, *args, **kwargs):
 		if isinstance(ast, AST) and 'rule' not in ast:
@@ -27,7 +29,27 @@ class Semantics(object):
 	def binInteger(self, ast):
 		return {'rule' : 'tokInteger', 'value': int(ast, 2)}
 
-def parse(filename, text):
+	def includeDirective(self, ast):
+		for dir in includePaths:
+			try:
+				fn = dir + '/' + ast
+				with open(fn) as f:
+					return parse(ast, f.read())
+			except IOError:
+				pass
+		print 'Could not find include file:', ast
+		print 'Include paths:', includePaths
+		assert False
+
+def parse(filename, text, _includePaths=None):
+	global includePaths
+	if _includePaths is None:
+		_includePaths = []
+	if '/' in filename:
+		_includePaths.append(filename.rsplit('/', 1)[0])
+	for elem in _includePaths:
+		if elem not in includePaths:
+			includePaths.append(elem)
 	parser = grammar.grammarParser(parseinfo=True)
 	ast = parser.parse(
 		text,

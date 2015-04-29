@@ -12,10 +12,10 @@ ESC =
 tokString = '"' @:{?/[^"\n\\]/?|ESC} '"';
 tokCodeFragment = ?/\[\{.*?\]\}/?;
 
-includeDirective = "include" tokString;
+includeDirective = "include" @:tokString [";"];
 
 tableGenFile = {object} $;
-object = tclass | tdef | defm | let | multiClass | foreach;
+object = includeDirective | tclass | tdef | defm | let | multiClass | foreach;
 
 tclass = "class" name:tokIdentifier [args:templateArgList] bases:baseClassList body:body;
 mdecl = "," @:declaration;

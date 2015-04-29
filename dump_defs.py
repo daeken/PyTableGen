@@ -5,6 +5,8 @@ from pprint import pprint
 with open(sys.argv[1]) as f:
 	text = f.read()
 data = interpret(sys.argv[1], text)
+if len(sys.argv) > 2:
+	data = data.deriving(sys.argv[2])
 
 def drepr(val):
 	if isinstance(val, tuple) and val[0] == 'defref':
@@ -16,7 +18,7 @@ def drepr(val):
 	else:
 		return `val`
 
-for name, body in data.defs:
+for name, body in data:
 	print 'def %s { // %s' % (name, ' '.join(body[0]))
 	for ename, (etype, eval) in body[1].items():
 		print '  %s %s = %s;' % (etype, ename, drepr(eval))

@@ -15,7 +15,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from grako.parsing import graken, Parser
 
 
-__version__ = (2015, 4, 28, 21, 30, 22, 1)
+__version__ = (2015, 4, 29, 0, 48, 45, 2)
 
 __all__ = [
     'grammarParser',
@@ -108,6 +108,9 @@ class grammarParser(Parser):
     def _includeDirective_(self):
         self._token('include')
         self._tokString_()
+        self.ast['@'] = self.last_node
+        with self._optional():
+            self._token(';')
 
     @graken()
     def _tableGenFile_(self):
@@ -120,6 +123,8 @@ class grammarParser(Parser):
     @graken()
     def _object_(self):
         with self._choice():
+            with self._option():
+                self._includeDirective_()
             with self._option():
                 self._tclass_()
             with self._option():
