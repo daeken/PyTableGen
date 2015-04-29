@@ -20,7 +20,7 @@ def drepr(type, val):
 	else:
 		return `val`
 
-for name, body in data:
+for name, body in sorted(data, key=lambda a: a[0]):
 	print 'def %s { // %s' % (name, ' '.join(body[0]))
 	for ename, (etype, eval) in body[1].items():
 		print '  %s %s = %s;' % (etype, ename, drepr(etype, eval))
