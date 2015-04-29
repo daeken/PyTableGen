@@ -14,9 +14,9 @@ def drepr(type, val):
 	elif isinstance(val, unicode):
 		return '"%s"' % val.encode('unicode_escape').replace('"', '\\"')
 	elif isinstance(val, list):
-		return '[%s]' % (', '.join(map(drepr, val)))
+		return '[%s]' % (', '.join(map(lambda x: drepr(type, x), val)))
 	elif isinstance(val, Dag):
-		return '(%s)' % ' '.join('%s:%s' % (drepr(value), name) if name is not None else drepr(value) for name, value in val.elements)
+		return '(%s)' % ' '.join('%s:%s' % (drepr(type, value), name) if name is not None else drepr(type, value) for name, value in val.elements)
 	else:
 		return `val`
 
