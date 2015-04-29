@@ -32,16 +32,20 @@ classID = tokIdentifier;
 
 listType = "list" "<" type:type ">";
 
-value = value:simpleValue {suffix:valueSuffix};
+value = value:simpleValue suffixes:{valueSuffix};
 valueSuffix =
-	"{" rangeList "}" | 
-	"[" rangeList "]" | 
-	"." tokIdentifier;
-rangeList = rangePiece {"," rangePiece};
+	@:bitRange | 
+	@:listRange | 
+	@:attrAccess;
+bitRange = "{" ranges:rangeList "}";
+listRange = "[" ranges:rangeList "]";
+attrAccess = "." attr:tokIdentifier;
+mrange = "," @:rangePiece;
+rangeList = rangePiece {mrange};
+intRange = start:tokInteger "-" end:tokInteger;
 rangePiece =
-	tokInteger | 
-	tokInteger "-" tokInteger | 
-	tokInteger tokInteger;
+	intRange |
+	tokInteger;
 
 stringJoin = {tokString}+;
 

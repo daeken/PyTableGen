@@ -15,7 +15,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from grako.parsing import graken, Parser
 
 
-__version__ = (2015, 4, 29, 0, 48, 45, 2)
+__version__ = (2015, 4, 29, 4, 7, 0, 2)
 
 __all__ = [
     'grammarParser',
@@ -242,13 +242,13 @@ class grammarParser(Parser):
         self._simpleValue_()
         self.ast['value'] = self.last_node
 
-        def block1():
+        def block2():
             self._valueSuffix_()
-            self.ast['suffix'] = self.last_node
-        self._closure(block1)
+        self._closure(block2)
+        self.ast['suffixes'] = self.last_node
 
         self.ast._define(
-            ['value', 'suffix'],
+            ['value', 'suffixes'],
             []
         )
 
@@ -256,38 +256,84 @@ class grammarParser(Parser):
     def _valueSuffix_(self):
         with self._choice():
             with self._option():
-                self._token('{')
-                self._rangeList_()
-                self._token('}')
+                self._bitRange_()
+                self.ast['@'] = self.last_node
             with self._option():
-                self._token('[')
-                self._rangeList_()
-                self._token(']')
+                self._listRange_()
+                self.ast['@'] = self.last_node
             with self._option():
-                self._token('.')
-                self._tokIdentifier_()
+                self._attrAccess_()
+                self.ast['@'] = self.last_node
             self._error('no available options')
+
+    @graken()
+    def _bitRange_(self):
+        self._token('{')
+        self._rangeList_()
+        self.ast['ranges'] = self.last_node
+        self._token('}')
+
+        self.ast._define(
+            ['ranges'],
+            []
+        )
+
+    @graken()
+    def _listRange_(self):
+        self._token('[')
+        self._rangeList_()
+        self.ast['ranges'] = self.last_node
+        self._token(']')
+
+        self.ast._define(
+            ['ranges'],
+            []
+        )
+
+    @graken()
+    def _attrAccess_(self):
+        self._token('.')
+        self._tokIdentifier_()
+        self.ast['attr'] = self.last_node
+
+        self.ast._define(
+            ['attr'],
+            []
+        )
+
+    @graken()
+    def _mrange_(self):
+        self._token(',')
+        self._rangePiece_()
+        self.ast['@'] = self.last_node
 
     @graken()
     def _rangeList_(self):
         self._rangePiece_()
 
         def block0():
-            self._token(',')
-            self._rangePiece_()
+            self._mrange_()
         self._closure(block0)
+
+    @graken()
+    def _intRange_(self):
+        self._tokInteger_()
+        self.ast['start'] = self.last_node
+        self._token('-')
+        self._tokInteger_()
+        self.ast['end'] = self.last_node
+
+        self.ast._define(
+            ['start', 'end'],
+            []
+        )
 
     @graken()
     def _rangePiece_(self):
         with self._choice():
             with self._option():
-                self._tokInteger_()
+                self._intRange_()
             with self._option():
-                self._tokInteger_()
-                self._token('-')
-                self._tokInteger_()
-            with self._option():
-                self._tokInteger_()
                 self._tokInteger_()
             self._error('no available options')
 
@@ -786,7 +832,22 @@ class grammarSemantics(object):
     def valueSuffix(self, ast):
         return ast
 
+    def bitRange(self, ast):
+        return ast
+
+    def listRange(self, ast):
+        return ast
+
+    def attrAccess(self, ast):
+        return ast
+
+    def mrange(self, ast):
+        return ast
+
     def rangeList(self, ast):
+        return ast
+
+    def intRange(self, ast):
         return ast
 
     def rangePiece(self, ast):

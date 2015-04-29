@@ -19,6 +19,7 @@ class Semantics(object):
 	templateArgList = listJoiner
 	baseClassListNE = listJoiner
 	letList = listJoiner
+	rangeList = listJoiner
 
 	def decimalInteger(self, ast):
 		if isinstance(ast, list):
