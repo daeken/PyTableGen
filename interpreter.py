@@ -282,6 +282,12 @@ class Interpreter(object):
 		elif op == '!if':
 			cmp, if_, else_ = args
 			return if_ if cmp != 0 else else_
+		elif op == '!head':
+			return args[0][0]
+		elif op == '!tail':
+			return args[0][1:]
+		elif op == '!empty':
+			return 1 if len(args[0]) == 0 else 0
 		else:
 			print 'Unknown bang op:', op
 			pprint(args)
