@@ -58,7 +58,7 @@ simpleValue =
 	"{" valueList "}" | 
 	classID "<" valueListNE ">" | 
 	simpleList | 
-	"(" dagArg dagArgList ")" | 
+	dag | 
 	bangValue;
 
 simpleList = "[" values:valueList "]" ["<" type:type ">"];
@@ -66,6 +66,7 @@ valueList = [valueListNE];
 mvalue = "," @:value;
 valueListNE = value {mvalue};
 
+dag = "(" root:dagArg args:dagArgList ")";
 marg = "," @:dagArg;
 dagArgList = dagArg {marg};
 dagArg = value:value [":" name:tokVarName] | name:tokVarName;

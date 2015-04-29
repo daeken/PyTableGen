@@ -15,7 +15,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from grako.parsing import graken, Parser
 
 
-__version__ = (2015, 4, 29, 4, 7, 0, 2)
+__version__ = (2015, 4, 29, 4, 52, 49, 2)
 
 __all__ = [
     'grammarParser',
@@ -369,10 +369,7 @@ class grammarParser(Parser):
             with self._option():
                 self._simpleList_()
             with self._option():
-                self._token('(')
-                self._dagArg_()
-                self._dagArgList_()
-                self._token(')')
+                self._dag_()
             with self._option():
                 self._bangValue_()
             self._error('expecting one of: ?')
@@ -412,6 +409,20 @@ class grammarParser(Parser):
         def block0():
             self._mvalue_()
         self._closure(block0)
+
+    @graken()
+    def _dag_(self):
+        self._token('(')
+        self._dagArg_()
+        self.ast['root'] = self.last_node
+        self._dagArgList_()
+        self.ast['args'] = self.last_node
+        self._token(')')
+
+        self.ast._define(
+            ['root', 'args'],
+            []
+        )
 
     @graken()
     def _marg_(self):
@@ -869,6 +880,9 @@ class grammarSemantics(object):
         return ast
 
     def valueListNE(self, ast):
+        return ast
+
+    def dag(self, ast):
         return ast
 
     def marg(self, ast):

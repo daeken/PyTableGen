@@ -31,6 +31,15 @@ class Definitions(list):
 	def named(self, name):
 		return [tdef for tdef in self if tdef[0] == name][0]
 
+class Dag(object):
+	def __init__(self, interpreter, elem):
+		self.elements = []
+		for elem in [elem['root']] + elem['args']:
+			self.elements.append((elem['name'], interpreter.evalexpr(elem['value'])))
+
+	def __repr__(self):
+		return 'Dag(%s)' % (', '.join('%s:%s' % (value, name) if name is not None else str(value) for name, value in self.elements))
+
 class Interpreter(object):
 	def __init__(self, ast):
 		self.ast = ast
@@ -176,6 +185,8 @@ class Interpreter(object):
 				elif value['rule'] == 'simpleList':
 					assert value['type'] is None
 					value = map(self.evalexpr, value['values_']) if value['values_'] is not None else []
+				elif value['rule'] == 'dag':
+					value = Dag(self, value)
 				else:
 					print 'Unknown value in expr:', value['rule']
 					pprint(value)

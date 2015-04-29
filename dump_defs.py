@@ -1,4 +1,4 @@
-from interpreter import interpret
+from interpreter import interpret, Dag
 
 import sys
 from pprint import pprint
@@ -15,6 +15,8 @@ def drepr(val):
 		return '"%s"' % val.encode('unicode_escape').replace('"', '\\"')
 	elif isinstance(val, list):
 		return '[%s]' % (', '.join(map(drepr, val)))
+	elif isinstance(val, Dag):
+		return '(%s)' % ' '.join('%s:%s' % (drepr(value), name) if name is not None else drepr(value) for name, value in val.elements)
 	else:
 		return `val`
 
