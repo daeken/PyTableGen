@@ -109,16 +109,17 @@ class Interpreter(object):
 			if elem['rule'] == 'tdef':
 				self.pushcontext()
 				cname = elem['name']
-				NAME = self.context['NAME']
-				while True:
-					if cname.startswith('NAME#'):
-						cname = NAME + cname[5:]
-					elif cname.endswith('#NAME'):
-						cname = cname[:-5] + NAME
-					elif '#NAME#' in cname:
-						cname = cname.replace('#NAME#', NAME)
-					else:
-						break
+				if 'NAME' in self.context:
+					NAME = self.context['NAME']
+					while True:
+						if cname.startswith('NAME#'):
+							cname = NAME + cname[5:]
+						elif cname.endswith('#NAME'):
+							cname = cname[:-5] + NAME
+						elif '#NAME#' in cname:
+							cname = cname.replace('#NAME#', NAME)
+						else:
+							break
 				if cname == elem['name']:
 					cname = u''.join(self.basenames) + elem['name']
 				if len(self.basenames) == 0:
@@ -258,7 +259,7 @@ class Interpreter(object):
 					nval = 0
 					for elem in suffix['ranges']:
 						if elem['rule'] == 'intRange':
-							for i in xrange(elem['end']['value'], elem['start']['value']-1, -1):
+							for i in xrange(elem['start']['value'], elem['end']['value']-1, -1):
 								nval = (nval << 1) | ((value >> i) & 1)
 						elif elem['rule'] == 'tokInteger':
 							nval = (nval << 1) | ((value >> elem['value']) & 1)
