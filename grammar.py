@@ -15,7 +15,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from grako.parsing import graken, Parser
 
 
-__version__ = (2015, 4, 29, 6, 18, 5, 2)
+__version__ = (2015, 4, 29, 20, 56, 28, 2)
 
 __all__ = [
     'grammarParser',
@@ -102,15 +102,13 @@ class grammarParser(Parser):
 
     @graken()
     def _tokCodeFragment_(self):
-        self._pattern(r'\[\{.*?\]\}')
+        self._pattern(r'\[\{(.|\n)*?\}\]')
 
     @graken()
     def _includeDirective_(self):
         self._token('include')
         self._tokString_()
         self.ast['@'] = self.last_node
-        with self._optional():
-            self._token(';')
 
     @graken()
     def _tableGenFile_(self):
@@ -358,10 +356,6 @@ class grammarParser(Parser):
     def _simpleValue_(self):
         with self._choice():
             with self._option():
-                self._tokInteger_()
-            with self._option():
-                self._tokIdentifier_()
-            with self._option():
                 self._stringJoin_()
             with self._option():
                 self._tokCodeFragment_()
@@ -382,6 +376,10 @@ class grammarParser(Parser):
                 self._dag_()
             with self._option():
                 self._bangValue_()
+            with self._option():
+                self._tokInteger_()
+            with self._option():
+                self._tokIdentifier_()
             self._error('expecting one of: ?')
 
     @graken()
@@ -425,7 +423,8 @@ class grammarParser(Parser):
         self._token('(')
         self._dagArg_()
         self.ast['root'] = self.last_node
-        self._dagArgList_()
+        with self._optional():
+            self._dagArgList_()
         self.ast['args'] = self.last_node
         self._token(')')
 
@@ -593,11 +592,12 @@ class grammarParser(Parser):
     def _bodyItem_(self):
         with self._choice():
             with self._option():
+                self._bodyLet_()
+                self.ast['@'] = self.last_node
+            with self._option():
                 self._declaration_()
                 self.ast['@'] = self.last_node
                 self._token(';')
-            with self._option():
-                self._bodyLet_()
             self._error('no available options')
 
     @graken()
@@ -606,22 +606,23 @@ class grammarParser(Parser):
         self._tokIdentifier_()
         self.ast['name'] = self.last_node
         with self._optional():
-            self._rangeList_()
-            self.ast['range'] = self.last_node
+            self._valueSuffix_()
+            self.ast['suffix'] = self.last_node
         self._token('=')
         self._value_()
         self.ast['value'] = self.last_node
         self._token(';')
 
         self.ast._define(
-            ['name', 'range', 'value'],
+            ['name', 'suffix', 'value'],
             []
         )
 
     @graken()
     def _tdef_(self):
         self._token('def')
-        self._tokIdentifier_()
+        with self._optional():
+            self._tokIdentifier_()
         self.ast['name'] = self.last_node
         self._baseClassList_()
         self.ast['bases'] = self.last_node
@@ -717,14 +718,14 @@ class grammarParser(Parser):
         self._tokIdentifier_()
         self.ast['name'] = self.last_node
         with self._optional():
-            self._rangeList_()
-        self.ast['range'] = self.last_node
+            self._valueSuffix_()
+        self.ast['suffix'] = self.last_node
         self._token('=')
         self._value_()
         self.ast['value'] = self.last_node
 
         self.ast._define(
-            ['name', 'range', 'value'],
+            ['name', 'suffix', 'value'],
             []
         )
 

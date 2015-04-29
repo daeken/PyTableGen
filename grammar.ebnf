@@ -10,9 +10,9 @@ ESC =
 	?/\\['"\\nrtbfv]/? |
 	?/\\u[a-fA-F0-9]{4}/?;
 tokString = '"' @:{?/[^"\n\\]/?|ESC} '"';
-tokCodeFragment = ?/\[\{.*?\]\}/?;
+tokCodeFragment = ?/\[\{(.|\n)*?\}\]/?;
 
-includeDirective = "include" @:tokString [";"];
+includeDirective = "include" @:tokString;
 
 tableGenFile = {object} $;
 object = includeDirective | tclass | tdef | defm | let | multiClass | foreach;
@@ -51,8 +51,6 @@ rangePiece =
 stringJoin = {tokString}+;
 
 simpleValue = 
-	tokInteger | 
-	tokIdentifier | 
 	stringJoin | 
 	tokCodeFragment | 
 	"?" |
@@ -60,14 +58,16 @@ simpleValue =
 	classID "<" valueListNE ">" | 
 	simpleList | 
 	dag | 
-	bangValue;
+	bangValue |
+	tokInteger | 
+	tokIdentifier;
 
 simpleList = "[" values:valueList "]" ["<" type:type ">"];
 valueList = [valueListNE];
 mvalue = "," @:value;
 valueListNE = value {mvalue};
 
-dag = "(" root:dagArg args:dagArgList ")";
+dag = "(" root:dagArg args:[dagArgList] ")";
 marg = "," @:dagArg;
 dagArgList = dagArg {marg};
 dagArg = value:value [":" name:tokVarName] | name:tokVarName;
@@ -88,11 +88,11 @@ defmID = tokIdentifier;
 body = ";" | "{" @:bodyList "}";
 bodyList = {bodyItem};
 bodyItem =
-	@:declaration ";" |
-	bodyLet;
-bodyLet = "let" name:tokIdentifier [range:rangeList] "=" value:value ";";
+	@:bodyLet |
+	@:declaration ";";
+bodyLet = "let" name:tokIdentifier [suffix:valueSuffix] "=" value:value ";";
 
-tdef = "def" name:tokIdentifier bases:baseClassList body:body;
+tdef = "def" name:[tokIdentifier] bases:baseClassList body:body;
 defm = "defm" name:[tokIdentifier] ":" bases:baseClassListNE ";";
 
 foreach =
@@ -104,7 +104,7 @@ let =
 	"let" items:letList "in" body+:object;
 mlitem = "," @:letItem;
 letList = letItem {mlitem};
-letItem = name:tokIdentifier range:[rangeList] "=" value:value;
+letItem = name:tokIdentifier suffix:[valueSuffix] "=" value:value;
 
 multiClass = "multiclass" name:tokIdentifier [args:templateArgList] [":" bases:baseMultiClassList] "{" body:{multiClassObject}+ "}";
 mmcls = "," @:multiClassID;
