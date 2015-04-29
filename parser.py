@@ -42,7 +42,7 @@ class Semantics(object):
 		print 'Include paths:', includePaths
 		assert False
 
-def parse(filename, text, _includePaths=None):
+def parse(filename, _includePaths=None):
 	global includePaths
 	if _includePaths is None:
 		_includePaths = []
@@ -52,6 +52,8 @@ def parse(filename, text, _includePaths=None):
 		if elem not in includePaths:
 			includePaths.append(elem)
 	parser = grammar.grammarParser(parseinfo=True)
+	with open(filename) as f:
+		text = f.read()
 	ast = parser.parse(
 		text,
 		'tableGenFile',
@@ -70,6 +72,4 @@ def parse(filename, text, _includePaths=None):
 
 if __name__=='__main__':
 	import sys, pprint
-	with open(sys.argv[1]) as f:
-		text = f.read()
-	pprint.pprint(parse(sys.argv[1], text))
+	pprint.pprint(parse(sys.argv[1]))

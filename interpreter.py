@@ -15,6 +15,8 @@ class TableGenType(object):
 			return TableGenType(type)
 		elif type['rule'] == 'listType':
 			return TableGenList(TableGenType.cast(type['type']))
+		elif type['rule'] == 'bitsType':
+			return TableGenBits(type['width']['value'])
 		else:
 			print 'Unknown rule for TableGenType:', type['rule']
 			pprint(type)
@@ -24,12 +26,27 @@ class TableGenList(TableGenType):
 	def __str__(self):
 		return 'list<%s>' % self.type
 
+class TableGenBits(TableGenType):
+	def __init__(self, width):
+		self.type = 'bits'
+		self.width = width
+
+	def __str__(self):
+		return 'bits<%i>' % self.width
+
 class Definitions(list):
 	def deriving(self, cls):
 		return Definitions([tdef for tdef in self if cls in tdef[1][0]])
 
 	def named(self, name):
 		return [tdef for tdef in self if tdef[0] == name][0]
+
+class Definition(OrderedDict):
+	def __getattr__(self, name):
+		if name in self:
+			return self[name]
+		else:
+			return OrderedDict.__getattr__(self, name)
 
 class Dag(object):
 	def __init__(self, interpreter, elem):
@@ -91,7 +108,7 @@ class Interpreter(object):
 			if elem['rule'] == 'tdef':
 				self.pushcontext()
 				NAME = u''.join(self.basenames) + elem['name']
-				self.cur_def = ([], OrderedDict(NAME=('string', NAME)))
+				self.cur_def = ([], Definition(NAME=('string', NAME)))
 				self.context['NAME'] = NAME
 				self.defs.append((NAME, self.cur_def))
 				if elem['bases'] is not None:
@@ -175,6 +192,8 @@ class Interpreter(object):
 				assert False
 
 	def evalexpr(self, value):
+		if value is None:
+			return None
 		if value['rule'] == 'value':
 			value, suffixes = value['value'], value['suffixes']
 			if isinstance(value, dict):
@@ -207,7 +226,7 @@ class Interpreter(object):
 				assert False
 
 			for suffix in suffixes:
-				if suffix['rule'] in ('listRange', 'bitRange'):
+				if suffix['rule'] == 'listRange':
 					nval = []
 					for elem in suffix['ranges']:
 						if elem['rule'] == 'intRange':
@@ -221,6 +240,19 @@ class Interpreter(object):
 					value = nval
 					if len(suffix['ranges']) == 1 and suffix['ranges'][0]['rule'] == 'tokInteger':
 						value = value[0]
+				elif suffix['rule'] == 'bitRange':
+					nval = 0
+					for elem in suffix['ranges']:
+						if elem['rule'] == 'intRange':
+							for i in xrange(elem['end']['value'], elem['start']['value']-1, -1):
+								nval = (nval << 1) | ((value >> i) & 1)
+						elif elem['rule'] == 'tokInteger':
+							nval = (nval << 1) | ((value >> elem['value']) & 1)
+						else:
+							print 'Unknown rule in range:', elem['rule']
+							pprint(elem)
+							return False
+					value = nval
 				elif suffix['rule'] == 'attrAccess':
 					if isinstance(value, tuple) and value[0] == 'defref':
 						value = self.defs.named(value[1])
@@ -273,12 +305,10 @@ class Interpreter(object):
 	def poplet(self):
 		self.let = self.lets.pop()
 
-def interpret(filename, source, _includePaths=None):
-	ast = parse(filename, source, _includePaths=None)
+def interpret(filename, _includePaths=None):
+	ast = parse(filename, _includePaths=None)
 	return Interpreter(ast).defs
 
 if __name__=='__main__':
 	import sys
-	with open(sys.argv[1]) as f:
-		text = f.read()
-	interpret(sys.argv[1], text)
+	interpret(sys.argv[1])

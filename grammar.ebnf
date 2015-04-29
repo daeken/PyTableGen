@@ -1,4 +1,4 @@
-tokInteger = decimalInteger | hexInteger | binInteger;
+tokInteger = hexInteger | binInteger | decimalInteger;
 decimalInteger = ["+" | "-"] ?/[0-9]+/?;
 hexInteger = "0x" @:?/[0-9a-fA-F]+/?;
 binInteger = "0b" @:?/[01]+/?;
@@ -25,12 +25,13 @@ declaration = type:type name:tokIdentifier value:defaultValue;
 
 type =
 	"string" | "code" | "bit" | "int" | "dag" |
-	"bits" "<" tokInteger ">" |
+	bitsType |
 	listType |
 	classID;
 classID = tokIdentifier;
 
 listType = "list" "<" type:type ">";
+bitsType = "bits" "<" width:tokInteger ">";
 
 value = value:simpleValue suffixes:{valueSuffix};
 valueSuffix =
@@ -50,8 +51,8 @@ rangePiece =
 stringJoin = {tokString}+;
 
 simpleValue = 
-	tokIdentifier | 
 	tokInteger | 
+	tokIdentifier | 
 	stringJoin | 
 	tokCodeFragment | 
 	"?" |

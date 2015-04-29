@@ -15,7 +15,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from grako.parsing import graken, Parser
 
 
-__version__ = (2015, 4, 29, 4, 52, 49, 2)
+__version__ = (2015, 4, 29, 5, 31, 40, 2)
 
 __all__ = [
     'grammarParser',
@@ -38,11 +38,11 @@ class grammarParser(Parser):
     def _tokInteger_(self):
         with self._choice():
             with self._option():
-                self._decimalInteger_()
-            with self._option():
                 self._hexInteger_()
             with self._option():
                 self._binInteger_()
+            with self._option():
+                self._decimalInteger_()
             self._error('no available options')
 
     @graken()
@@ -210,10 +210,7 @@ class grammarParser(Parser):
             with self._option():
                 self._token('dag')
             with self._option():
-                self._token('bits')
-                self._token('<')
-                self._tokInteger_()
-                self._token('>')
+                self._bitsType_()
             with self._option():
                 self._listType_()
             with self._option():
@@ -234,6 +231,19 @@ class grammarParser(Parser):
 
         self.ast._define(
             ['type'],
+            []
+        )
+
+    @graken()
+    def _bitsType_(self):
+        self._token('bits')
+        self._token('<')
+        self._tokInteger_()
+        self.ast['width'] = self.last_node
+        self._token('>')
+
+        self.ast._define(
+            ['width'],
             []
         )
 
@@ -348,9 +358,9 @@ class grammarParser(Parser):
     def _simpleValue_(self):
         with self._choice():
             with self._option():
-                self._tokIdentifier_()
-            with self._option():
                 self._tokInteger_()
+            with self._option():
+                self._tokIdentifier_()
             with self._option():
                 self._stringJoin_()
             with self._option():
@@ -835,6 +845,9 @@ class grammarSemantics(object):
         return ast
 
     def listType(self, ast):
+        return ast
+
+    def bitsType(self, ast):
         return ast
 
     def value(self, ast):
