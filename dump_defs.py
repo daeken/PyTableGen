@@ -1,10 +1,20 @@
-from interpreter import interpret, Dag, TableGenBits
-
-import sys
 from pprint import pprint
-data = interpret(sys.argv[1])
-if len(sys.argv) > 2:
-	data = data.deriving(sys.argv[2])
+from tblgen import interpret, Dag, TableGenBits
+import argparse
+
+parser = argparse.ArgumentParser(description='Dump definitions from a TableGen file')
+parser.add_argument('filename', metavar='filename.td', type=unicode,
+					help='a TableGen file')
+parser.add_argument('--filter', metavar='class', type=unicode, action='append', 
+					help='filter by class')
+parser.add_argument('--json', action='store_true', 
+					help='output JSON')
+
+args = parser.parse_args()
+fulldata = data = interpret(args.filename)
+if args.filter is not None:
+	for der in args.filter:
+		data = data.deriving(der)
 
 def drepr(type, val):
 	if isinstance(type, TableGenBits):
@@ -23,9 +33,52 @@ def drepr(type, val):
 	else:
 		return `val`
 
-for name, body in sorted(data, key=lambda a: a[0]):
-	print 'def %s { // %s' % (name, ' '.join(body[0]))
-	for ename, (etype, eval) in body[1].items():
-		print '  %s %s = %s;' % (etype, ename, drepr(etype, eval))
-	print '}'
-	print
+def jsonify(val):
+	if isinstance(val, tuple):
+		if val[0] == 'defref':
+			return val[1]
+		elif val[0] == 'code':
+			return val[1]
+		else:
+			print 'Unknown tuple type in jsonify:', val[0]
+			pprint(val)
+			assert False
+	elif isinstance(val, list):
+		return map(jsonify, val)
+	elif isinstance(val, int):
+		return val
+	elif isinstance(val, unicode) or isinstance(val, str):
+		return val
+	elif isinstance(val, Dag):
+		assert False
+	else:
+		print 'Unknown type in jsonify:'
+		pprint(val)
+		assert False
+
+if args.json:
+	fulldata = dict(fulldata)
+	include = list(dict(data).keys())
+	output = {}
+
+	while len(include):
+		name = include.pop()
+		if name in output:
+			continue
+
+		tdef = fulldata[name]
+		output[name] = dict(
+			_derived_from=tdef[0], 
+			_types={k:str(v[0]) for k, v in tdef[1].items()}, 
+		)
+		output[name].update({k:jsonify(v[1]) for k, v in tdef[1].items() if k != 'NAME'})
+
+	import json
+	print json.dumps(output, indent=2)
+else:
+	for name, body in sorted(data, key=lambda a: a[0]):
+		print 'def %s { // %s' % (name, ' '.join(body[0]))
+		for ename, (etype, eval) in body[1].items():
+			print '  %s %s = %s;' % (etype, ename, drepr(etype, eval))
+		print '}'
+		print

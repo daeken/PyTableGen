@@ -1,3 +1,3 @@
 #!/bin/bash
 
-grako grammar.ebnf -o grammar.py
+grako tblgen/grammar.ebnf -o tblgen/grammar.py
