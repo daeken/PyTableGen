@@ -1,7 +1,7 @@
 from parser import parse
 from pprint import pprint
 from collections import OrderedDict
-import itertools, re
+import itertools, re, sys
 
 class TableGenType(object):
 	def __init__(self, type):
@@ -106,7 +106,7 @@ class Interpreter(object):
 					self.let[item['name']] = item
 				self.define(elem['body'])
 				self.poplet()
-			elif elem['rule'] not in ('tdef', 'defm'):
+			elif elem['rule'] not in ('tdef', 'defm', 'foreach'):
 				print 'Unhandled rule:', elem['rule']
 				assert False
 		elif isinstance(elem, list):
@@ -126,17 +126,21 @@ class Interpreter(object):
 					self.anony_i += 1
 				else:
 					cname = elem['name']
-				if 'NAME' in self.context:
-					NAME = self.context['NAME']
-					while True:
-						if cname.startswith('NAME#'):
-							cname = NAME + cname[5:]
-						elif cname.endswith('#NAME'):
-							cname = cname[:-5] + NAME
-						elif '#NAME#' in cname:
-							cname = cname.replace('#NAME#', NAME)
-						else:
-							break
+				while True:
+					matched = False
+					for k, v in self.context.items()+self.let.items():
+						v = unicode(v)
+						if cname.startswith(k + '#'):
+							cname = v + cname[len(k)+1:]
+							matched = True
+						elif cname.endswith('#' + k):
+							cname = cname[:-len(k)-1] + v
+							matched = True
+						elif '#'+k+'#' in cname:
+							cname = cname.replace('#'+k+'#', v)
+							matched = True
+					if not matched:
+						break
 				if cname == elem['name']:
 					cname = u''.join(self.basenames) + elem['name']
 				if len(self.basenames) == 0:
@@ -175,6 +179,15 @@ class Interpreter(object):
 					self.let[item['name']] = self.evalexpr(item['value'])
 				self.execute(elem['body'])
 				self.poplet()
+			elif elem['rule'] == 'foreach':
+				name = elem['decl']['name']
+				values = self.evalexpr(elem['decl']['value'])
+				assert isinstance(values, list)
+				for val in values:
+					self.pushlet()
+					self.let[name] = val
+					self.execute(elem['body'])
+					self.poplet()
 			elif elem['rule'] not in ('tclass', 'multiClass'):
 				print 'Unhandled rule:', elem['rule']
 				assert False
@@ -269,6 +282,19 @@ class Interpreter(object):
 					value = ('defref', self.execute(tdef))
 					self.cur_def = cur_def
 					self.basenames = basenames
+				elif value['rule'] == 'intRange':
+					start, end = value['start']['value'], value['end']['value']
+					if start > end:
+						end, start = start, end
+					return list(range(start, end+1))
+				elif value['rule'] == 'multiList':
+					out = []
+					for elem in map(self.evalexpr, value['values_']):
+						if isinstance(elem, list):
+							out += elem
+						else:
+							out.append(elem)
+					return out
 				else:
 					print 'Unknown value in expr:', value['rule']
 					pprint(value)
@@ -278,6 +304,8 @@ class Interpreter(object):
 					value = None
 				elif value in self.context:
 					value = self.context[value]
+				elif value in self.let:
+					value = self.let[value]
 				elif value in [cdef[0] for cdef in self.defs]:
 					value = ('defref', value)
 				else:
@@ -322,6 +350,8 @@ class Interpreter(object):
 					if isinstance(value, tuple) and value[0] == 'defref':
 						value = self.defs.named(value[1])
 					value = value[1][1][suffix['attr']][1]
+				elif suffix['rule'] == 'paste':
+					value = unicode(value) + unicode(self.evalexpr(suffix['right']))
 				else:
 					print 'Unknown rule in suffix:', suffix['rule']
 					pprint(suffix)
@@ -401,5 +431,4 @@ def interpret(filename, _includePaths=None):
 	return Interpreter(ast).defs
 
 if __name__=='__main__':
-	import sys
 	interpret(sys.argv[1])

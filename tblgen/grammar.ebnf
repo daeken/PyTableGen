@@ -37,10 +37,12 @@ value = value:simpleValue suffixes:{valueSuffix};
 valueSuffix =
 	@:bitRange | 
 	@:listRange | 
-	@:attrAccess;
+	@:attrAccess |
+	@:paste;
 bitRange = "{" ranges:rangeList "}";
 listRange = "[" ranges:rangeList "]";
 attrAccess = "." attr:tokIdentifier;
+paste = "#" right:value;
 mrange = "," @:rangePiece;
 rangeList = rangePiece {mrange};
 intRange = start:tokInteger "-" end:tokInteger;
@@ -54,11 +56,12 @@ simpleValue =
 	stringJoin | 
 	tokCodeFragment | 
 	"?" |
-	"{" valueList "}" | 
+	multiList | 
 	implicitDef | 
 	simpleList | 
 	dag | 
 	bangValue |
+	intRange |
 	tokInteger | 
 	tokIdentifier;
 
@@ -66,6 +69,8 @@ simpleList = "[" values:valueList "]" ["<" type:type ">"];
 valueList = [valueListNE];
 mvalue = "," @:value;
 valueListNE = value {mvalue};
+
+multiList = "{" values:valueList "}";
 
 implicitDef = id:classID "<" args:valueListNE ">";
 
@@ -97,9 +102,10 @@ bodyLet = "let" name:tokIdentifier [suffix:valueSuffix] "=" value:value ";";
 tdef = "def" name:[tokIdentifier] bases:baseClassList body:body;
 defm = "defm" name:[tokIdentifier] ":" bases:baseClassListNE ";";
 
+fordecl = name:tokIdentifier "=" value:value;
 foreach =
-	"foreach" declaration "in" "{" {object} "}" |
-	"foreach" declaration "in" object;
+	"foreach" decl:fordecl "in" "{" body:{object} "}" |
+	"foreach" decl:fordecl "in" body+:object;
 
 let =
 	"let" items:letList "in" "{" body:{object} "}" | 

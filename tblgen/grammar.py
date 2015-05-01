@@ -15,7 +15,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from grako.parsing import graken, Parser
 
 
-__version__ = (2015, 4, 29, 23, 6, 52, 2)
+__version__ = (2015, 5, 1, 5, 38, 38, 4)
 
 __all__ = [
     'grammarParser',
@@ -280,6 +280,9 @@ class grammarParser(Parser):
             with self._option():
                 self._attrAccess_()
                 self.ast['@'] = self.last_node
+            with self._option():
+                self._paste_()
+                self.ast['@'] = self.last_node
             self._error('no available options')
 
     @graken()
@@ -314,6 +317,17 @@ class grammarParser(Parser):
 
         self.ast._define(
             ['attr'],
+            []
+        )
+
+    @graken()
+    def _paste_(self):
+        self._token('#')
+        self._value_()
+        self.ast['right'] = self.last_node
+
+        self.ast._define(
+            ['right'],
             []
         )
 
@@ -370,9 +384,7 @@ class grammarParser(Parser):
             with self._option():
                 self._token('?')
             with self._option():
-                self._token('{')
-                self._valueList_()
-                self._token('}')
+                self._multiList_()
             with self._option():
                 self._implicitDef_()
             with self._option():
@@ -381,6 +393,8 @@ class grammarParser(Parser):
                 self._dag_()
             with self._option():
                 self._bangValue_()
+            with self._option():
+                self._intRange_()
             with self._option():
                 self._tokInteger_()
             with self._option():
@@ -422,6 +436,18 @@ class grammarParser(Parser):
         def block0():
             self._mvalue_()
         self._closure(block0)
+
+    @graken()
+    def _multiList_(self):
+        self._token('{')
+        self._valueList_()
+        self.ast['values'] = self.last_node
+        self._token('}')
+
+        self.ast._define(
+            ['values'],
+            []
+        )
 
     @graken()
     def _implicitDef_(self):
@@ -670,24 +696,46 @@ class grammarParser(Parser):
         )
 
     @graken()
+    def _fordecl_(self):
+        self._tokIdentifier_()
+        self.ast['name'] = self.last_node
+        self._token('=')
+        self._value_()
+        self.ast['value'] = self.last_node
+
+        self.ast._define(
+            ['name', 'value'],
+            []
+        )
+
+    @graken()
     def _foreach_(self):
         with self._choice():
             with self._option():
                 self._token('foreach')
-                self._declaration_()
+                self._fordecl_()
+                self.ast['decl'] = self.last_node
                 self._token('in')
                 self._token('{')
 
-                def block0():
+                def block2():
                     self._object_()
-                self._closure(block0)
+                self._closure(block2)
+                self.ast['body'] = self.last_node
                 self._token('}')
             with self._option():
                 self._token('foreach')
-                self._declaration_()
+                self._fordecl_()
+                self.ast['decl'] = self.last_node
                 self._token('in')
                 self._object_()
+                self.ast.setlist('body', self.last_node)
             self._error('no available options')
+
+        self.ast._define(
+            ['decl', 'body'],
+            ['body']
+        )
 
     @graken()
     def _let_(self):
@@ -885,6 +933,9 @@ class grammarSemantics(object):
     def attrAccess(self, ast):
         return ast
 
+    def paste(self, ast):
+        return ast
+
     def mrange(self, ast):
         return ast
 
@@ -913,6 +964,9 @@ class grammarSemantics(object):
         return ast
 
     def valueListNE(self, ast):
+        return ast
+
+    def multiList(self, ast):
         return ast
 
     def implicitDef(self, ast):
@@ -967,6 +1021,9 @@ class grammarSemantics(object):
         return ast
 
     def defm(self, ast):
+        return ast
+
+    def fordecl(self, ast):
         return ast
 
     def foreach(self, ast):
