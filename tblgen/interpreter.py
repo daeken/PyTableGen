@@ -122,7 +122,7 @@ class Interpreter(object):
 			if elem['rule'] == 'tdef':
 				self.pushcontext()
 				if elem['name'] is None:
-					cname = 'anonymous_%i' % (self.anony_i)
+					elem['name'] = cname = 'anonymous_%i' % (self.anony_i)
 					self.anony_i += 1
 				else:
 					cname = elem['name']
@@ -203,11 +203,13 @@ class Interpreter(object):
 			args = []
 		numoptional = len([arg['value'] is not None for arg in clsargs])
 		assert len(clsargs) >= len(args) >= len(clsargs) - numoptional
+		nctx = {}
 		for i, elem in enumerate(clsargs):
 			if len(args) > i:
-				self.context[elem['name']] = self.evalexpr(args[i])
+				nctx[elem['name']] = self.evalexpr(args[i])
 			else:
-				self.context[elem['name']] = self.evalexpr(clsargs[i]['value'])
+				nctx[elem['name']] = self.evalexpr(clsargs[i]['value'])
+		self.context.update(nctx)
 
 	def evalclass(self, name, args):
 		if name in self.multiclasses:
@@ -218,7 +220,9 @@ class Interpreter(object):
 		self.handleargs(cls['args'], args)
 
 		for base in cls['bases']:
+			self.pushcontext()
 			self.evalclass(base['id'], base['args'])
+			self.popcontext()
 
 		self.cur_def[0].append(name)
 
