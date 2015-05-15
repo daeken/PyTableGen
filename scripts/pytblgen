@@ -31,7 +31,8 @@ def drepr(type, val):
 	elif isinstance(val, list):
 		return '[%s]' % (', '.join(map(lambda x: drepr(type, x), val)))
 	elif isinstance(val, Dag):
-		return '(%s)' % ' '.join('%s:%s' % (drepr(type, value), name) if name is not None else drepr(type, value) for name, value in val.elements)
+		rest = ', '.join('%s:%s' % (drepr(type, value), name) if name is not None else drepr(type, value) for name, value in val.elements[1:])
+		return '(%s%s)' % (drepr(type, val.elements[0][1]), (' ' if len(val.elements) > 1 else '') + rest)
 	else:
 		return `val`
 
@@ -52,7 +53,10 @@ def jsonify(val):
 	elif isinstance(val, unicode) or isinstance(val, str):
 		return val
 	elif isinstance(val, Dag):
-		assert False
+		return [jsonify(val.elements[0][1])] + [
+			dict(name=elem[0], value=jsonify(elem[1]))
+			for elem in val.elements[1:]
+		]
 	else:
 		print 'Unknown type in jsonify:'
 		pprint(val)
