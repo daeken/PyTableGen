@@ -10,8 +10,10 @@ class Semantics(object):
 		if isinstance(ast, AST) and 'rule' not in ast:
 			ast['rule'] = ast._parseinfo.rule
 		return ast
+	def unescape(self, val):
+		return eval('"%s"' % val)
 	def tokString(self, ast):
-		return u''.join(ast)
+		return self.unescape(u''.join(ast))
 	def listJoiner(self, ast):
 		return [ast[0]] + ast[1]
 	def stringJoin(self, ast):
