@@ -12,10 +12,12 @@
 
 
 from __future__ import print_function, division, absolute_import, unicode_literals
+
 from grako.parsing import graken, Parser
+from grako.util import re, RE_FLAGS
 
 
-__version__ = (2015, 5, 1, 5, 38, 38, 4)
+__version__ = (2016, 2, 1, 6, 0, 38, 0)
 
 __all__ = [
     'grammarParser',
@@ -25,12 +27,13 @@ __all__ = [
 
 
 class grammarParser(Parser):
-    def __init__(self, whitespace=None, nameguard=True, **kwargs):
+    def __init__(self, whitespace=None, nameguard=None, **kwargs):
         super(grammarParser, self).__init__(
             whitespace=whitespace,
             nameguard=nameguard,
             comments_re=None,
             eol_comments_re=None,
+            ignorecase=None,
             **kwargs
         )
 

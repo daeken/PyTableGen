@@ -19,6 +19,13 @@ if args.filter is not None:
 		data = data.deriving(der)
 
 def drepr(type, val):
+	def dagop(name, value):
+		if name is None:
+			return drepr(type, value)
+		elif value is None:
+			return str(name)
+		else:
+			return '%s:%s' % (drepr(type, value), name)
 	if isinstance(type, TableGenBits):
 		return '{ %s }' % (', '.join(str((val >> (type.width - i - 1)) & 1) for i in xrange(type.width)))
 	elif isinstance(val, tuple):
@@ -31,7 +38,7 @@ def drepr(type, val):
 	elif isinstance(val, list):
 		return '[%s]' % (', '.join(map(lambda x: drepr(type, x), val)))
 	elif isinstance(val, Dag):
-		rest = ', '.join('%s:%s' % (drepr(type, value), name) if name is not None else drepr(type, value) for name, value in val.elements[1:])
+		rest = ', '.join(dagop(name, value) for name, value in val.elements[1:])
 		return '(%s%s)' % (drepr(type, val.elements[0][1]), (' ' if len(val.elements) > 1 else '') + rest)
 	else:
 		return `val`

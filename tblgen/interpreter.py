@@ -55,8 +55,16 @@ class Dag(object):
 		for elem in [elem['root']] + ([] if elem['args'] is None else elem['args']):
 			self.elements.append((elem['name'], interpreter.evalexpr(elem['value'])))
 
+	def _op(self, name, value):
+		if name is None:
+			return str(value)
+		elif value is None:
+			return str(name)
+		else:
+			return '%s:%s' % (value, name)
+
 	def __repr__(self):
-		return 'Dag(%s)' % (', '.join('%s:%s' % (value, name) if name is not None else str(value) for name, value in self.elements))
+		return 'Dag(%s)' % (', '.join(self._op(name, value) for name, value in self.elements))
 
 class Interpreter(object):
 	def __init__(self, ast):

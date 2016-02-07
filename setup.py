@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(name='PyTableGen',
-		version='0.2', 
+		version='0.3', 
 		description='Python port of LLVM\'s TableGen tool', 
 		author='Cody Brocious', 
 		author_email='cody.brocious@gmail.com', 
